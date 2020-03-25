@@ -182,5 +182,6 @@ def _load_data(path, labels_number=1):
            .reshape((3, _CIFAR_IMAGE_SIZE, _CIFAR_IMAGE_SIZE))
            .transpose((1, 2, 0))
           )
-    offset += 3072
+    #offset += 3072
+    offset += 30000
     yield labels, img
