@@ -19,7 +19,8 @@ import tensorflow_datasets.public_api as tfds
 _CIFAR_IMAGE_SIZE = 100
 _CIFAR_IMAGE_SHAPE = (_CIFAR_IMAGE_SIZE, _CIFAR_IMAGE_SIZE, 3)
 
-
+COLAB = True
+XIAMEN = False
 
 # TODO(mycervical): BibTeX citation
 _CITATION = """\
@@ -85,7 +86,12 @@ class Mycervical(tfds.core.GeneratorBasedBuilder):
     ]'''
     #boostx : commented following line to skip download and extract .gz.zip file. 
     # cifar_path = dl_manager.download_and_extract(self._cifar_info.url)
-    cifar_path = "/notebooks/Paul/cervical/simclr-2/data/downloads/extracted/"
+    
+    if COLAB:
+      cifar_path = "/content/simclr-2/data/downloads/extracted/"
+    elif XIAMEN:
+      cifar_path = "/notebooks/Paul/cervical/simclr-2/data/downloads/extracted/"
+      
     cifar_info = self._cifar_info
 
     cifar_path = os.path.join(cifar_path, cifar_info.prefix)
