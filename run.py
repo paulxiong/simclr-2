@@ -319,6 +319,8 @@ def perform_evaluation(estimator, input_fn, eval_steps, model, num_classes,
   flag_json_path = os.path.join(FLAGS.model_dir, 'flags.json')
   with tf.io.gfile.GFile(flag_json_path, 'w') as f:
     json.dump(FLAGS.flag_values_dict(), f)
+  #boostx save whole h5 model
+    model.save(model_dir + "simclr.h5")
 
   # Save Hub module.
   build_hub_module(model, num_classes,
