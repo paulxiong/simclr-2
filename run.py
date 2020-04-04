@@ -34,6 +34,13 @@ import tensorflow.compat.v1 as tf
 import tensorflow_datasets as tfds
 import tensorflow_hub as hub
 
+#boostx : 
+'''
+the tf2.0 have a issue with mode.save https://github.com/tensorflow/tensorflow/issues/26814
+use tf.keras.models.save() instead of model.save()
+'''
+import keras.models.save as keras_models_save
+
 
 FLAGS = flags.FLAGS
 
@@ -320,7 +327,8 @@ def perform_evaluation(estimator, input_fn, eval_steps, model, num_classes,
   with tf.io.gfile.GFile(flag_json_path, 'w') as f:
     json.dump(FLAGS.flag_values_dict(), f)
   #boostx save whole h5 model
-    model.save(model_dir + "simclr.h5")
+    #model.save(model_dir + "simclr.h5")
+    keras_models_save(model_dir + "simclr.h5")
 
   # Save Hub module.
   build_hub_module(model, num_classes,
