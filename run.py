@@ -39,8 +39,17 @@ import tensorflow_hub as hub
 the tf2.0 have a issue with mode.save https://github.com/tensorflow/tensorflow/issues/26814
 use tf.keras.models.save() instead of model.save()
 '''
-import keras.models.save as keras_models_save
+'''
+tf.disable_eager_execution()
 
+with tf.Session() as sess:
+  saver = tf.train.import_meta_graph('./tmp/simclr_test_ft/model.ckpt-196.meta')
+  saver.restore(sess, tf.train.latest_checkpoint('./tmp/simclr_test_ft'))
+  
+  
+graph = tf.get_default_graph()
+print(graph.get_operations())
+'''
 
 FLAGS = flags.FLAGS
 
@@ -113,7 +122,9 @@ flags.DEFINE_enum(
     'Whether to perform training or evaluation.')
 
 flags.DEFINE_enum(
-    'train_mode', 'pretrain', ['pretrain', 'finetune'],
+    #boostx: add predict
+    #'train_mode', 'pretrain', ['pretrain', 'finetune'],
+    'train_mode', 'pretrain', ['pretrain', 'finetune','predict'],
     'The train mode controls different objectives and trainable components.')
 
 flags.DEFINE_string(
@@ -311,7 +322,7 @@ def perform_evaluation(estimator, input_fn, eval_steps, model, num_classes,
   """
   if not checkpoint_path:
     checkpoint_path = estimator.latest_checkpoint()
-  result = estimator.evaluate(
+  result = estimator.evaluate( #//@follow-up Estmator Evaluation (11)
       input_fn, eval_steps, checkpoint_path=checkpoint_path,
       name=FLAGS.eval_name)
 
@@ -326,9 +337,6 @@ def perform_evaluation(estimator, input_fn, eval_steps, model, num_classes,
   flag_json_path = os.path.join(FLAGS.model_dir, 'flags.json')
   with tf.io.gfile.GFile(flag_json_path, 'w') as f:
     json.dump(FLAGS.flag_values_dict(), f)
-  #boostx save whole h5 model
-    #model.save(model_dir + "simclr.h5")
-    keras_models_save(model_dir + "simclr.h5")
 
   # Save Hub module.
   build_hub_module(model, num_classes,
@@ -337,7 +345,7 @@ def perform_evaluation(estimator, input_fn, eval_steps, model, num_classes,
 
   return result
 
-
+#//@follow-up Estmator Evaluation (2)
 def main(argv):
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
@@ -346,7 +354,7 @@ def main(argv):
   if FLAGS.train_summary_steps > 0:
     tf.config.set_soft_device_placement(True)
 
-
+#//@follow-up Estmator Evaluation (3)
   builder = tfds.builder(FLAGS.dataset, data_dir=FLAGS.data_dir)
   builder.download_and_prepare()
   num_train_examples = builder.info.splits[FLAGS.train_split].num_examples
@@ -385,8 +393,8 @@ def main(argv):
       save_checkpoints_steps=checkpoint_steps,
       keep_checkpoint_max=FLAGS.keep_checkpoint_max,
       master=master)
-  estimator = tf.estimator.tpu.TPUEstimator(
-      model_lib.build_model_fn(model, num_classes, num_train_examples),
+  estimator = tf.estimator.tpu.TPUEstimator( #//@follow-up Estmator Evaluation (4)
+      model_lib.build_model_fn(model, num_classes, num_train_examples),#//@follow-up Estmator Evaluation (5)
       config=run_config,
       train_batch_size=FLAGS.train_batch_size,
       eval_batch_size=FLAGS.eval_batch_size,
@@ -410,7 +418,7 @@ def main(argv):
   else:
     estimator.train(
         data_lib.build_input_fn(builder, True), max_steps=train_steps)
-    if FLAGS.mode == 'train_then_eval':
+    if FLAGS.mode == 'train_then_eval':  #//@follow-up Estmator Evaluation (10)
       perform_evaluation(
           estimator=estimator,
           input_fn=data_lib.build_input_fn(builder, False),
@@ -419,5 +427,7 @@ def main(argv):
           num_classes=num_classes)
 
 
-if __name__ == '__main__':
+#//@follow-up Estmator Evaluation (1)
+
+if __name__ == '__main__': 
   app.run(main)
