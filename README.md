@@ -88,3 +88,20 @@ Our [arXiv paper](https://arxiv.org/abs/2002.05709).
 
 ## Disclaimer
 This is not an official Google product.
+
+## Training dairy 
+* 4-12-2020 : 
+```
+  | /Volumes/Bo500G32MCache/Cervical/png2cifar10/cifar-10-binary.tar-04122020.gz: 
+         |--- /Volumes/Bo500G32MCache/Cervical/Training_Testing_Datasets/cells_towclass_1230
+                   |--- data_train
+                         |--- cells_N_test (26987)
+                         |--- cells_P_test (14365)
+                   |--- data_test
+                         |--- cells_N_test (1001)
+                         |--- cells_P_test (1001)
+```
+Evaluation (./simclr_test_ft/result.json): 
+```
+{"contrast_loss": 0.0, "contrastive_top_1_accuracy": 1.0, "contrastive_top_5_accuracy": 1.0, "label_top_1_accuracy": 0.8486999869346619, "label_top_5_accuracy": 0.9953, "loss": 0.42983800172805786, "regularization_loss": 0.0, "global_step": 9766.0}
+```
