@@ -325,6 +325,13 @@ def perform_evaluation(estimator, input_fn, eval_steps, model, num_classes,
   result = estimator.evaluate( #//@follow-up Estmator Evaluation (11)
       input_fn, eval_steps, checkpoint_path=checkpoint_path,
       name=FLAGS.eval_name)
+  #//@audit save the predicted (label, logit) to logfile
+  import sys
+  tf.logging.info("boostx debug:")
+  tf.logging.info({k:float(v) for k, v in result.items()})
+  #for key in result:
+  #    tf.logging.info(key,result['key'])
+  tf.logging.info(result['boostx_recall'])
 
   # Record results as JSON.
   result_json_path = os.path.join(FLAGS.model_dir, 'result.json')
@@ -347,6 +354,12 @@ def perform_evaluation(estimator, input_fn, eval_steps, model, num_classes,
 
 #//@follow-up Estmator Evaluation (2)
 def main(argv):
+  #boostx: todo: due to VSC latest code (4-12-2020) coverting   
+  # "--variable_schema='(?!global_step|(?:.*/|^)LARSOptimizer|head)'" 
+  #to "--variable_schema=\'(?!global_step|(?:.*/|^)LARSOptimizer|head)\'"
+  #I have to use following code to get a workaround: //@audit workaround
+  FLAGS.variable_schema='(?!global_step|(?:.*/|^)LARSOptimizer|head)'
+    
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
 

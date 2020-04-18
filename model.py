@@ -31,10 +31,28 @@ import tensorflow.compat.v2 as tf2
 
 FLAGS = flags.FLAGS
 
+def read_image(path):
+    # read image
+    #image = misc.imread(args.image_path)
+    image = misc.imread(path)
 
+    # resize to caffe standard size
+    resized = scipy.misc.imresize(image, (256, 256, 3))  #
+
+    #center crop
+    crop_min = abs(config["image_size"] / 2 - (config["image_size"] / 2))
+    crop_max = crop_min + config["image_size"]
+    image = resized[crop_min:crop_max, crop_min:crop_max, :]
+
+    #subtract imagenet mean
+    mean_sub = image.astype(np.float32) - np.array([123, 117, 104]).astype(np.float32)
+    image = np.expand_dims(np.array(mean_sub), 0)
+    return image
+
+#//@follow-up Estmator Evaluation (6)
 def build_model_fn(model, num_classes, num_train_examples):
   """Build model function."""
-  def model_fn(features, labels, mode, params=None):
+  def model_fn(features, labels, mode, params=None): #//@follow-up Estmator Evaluation (7)
     """Build model and optimizer."""
     is_training = mode == tf.estimator.ModeKeys.TRAIN
 
@@ -44,13 +62,25 @@ def build_model_fn(model, num_classes, num_train_examples):
       if FLAGS.fine_tune_after_block > -1:
         raise ValueError('Does not support layer freezing during pretraining,'
                          'should set fine_tune_after_block<=-1 for safety.')
-    elif FLAGS.train_mode == 'finetune':
+    elif FLAGS.train_mode == 'finetune': #//@follow-up Estmator Evaluation (8)
       num_transforms = 1
+    #boostx add predict
+    elif FLAGS.train_mode == 'predict':  #//@audit predict
+      predictions,endpoints = model(features["image"], tf.estimator.ModeKeys.TRAIN)
+      _,top_5 =  tf.nn.top_k(predictions,k=5)
+      predictions = {
+          'top_1': tf.argmax(predictions, -1),
+          'top_5': top_5,
+          'probabilities': tf.nn.softmax(predictions),
+          'logits': predictions,
+      }
+      return tf.estimator.EstimatorSpec(mode, predictions=predictions)
+    #boostx:end 
     else:
       raise ValueError('Unknown train_mode {}'.format(FLAGS.train_mode))
 
-    # Split channels, and optionally apply extra batched augmentation.
-    features_list = tf.split(
+    # Split channels, and optionally apply extra batched augmentation. #//@follow-up Estmator Evaluation (9)
+    features_list = tf.split(  
         features, num_or_size_splits=num_transforms, axis=-1)
     if FLAGS.use_blur and is_training and FLAGS.train_mode == 'pretrain':
       features_list = data_util.batch_random_blur(
@@ -219,9 +249,10 @@ def build_model_fn(model, num_classes, num_train_examples):
       return tf.estimator.tpu.TPUEstimatorSpec(
           mode=mode, train_op=train_op, loss=loss, scaffold_fn=scaffold_fn)
     else:
-
+        
       def metric_fn(logits_sup, labels_sup, logits_con, labels_con, mask,
-                    **kws):
+                    **kws):  #//@follow-up metric_fn (0)
+
         """Inner metric function."""
         metrics = {k: tf.metrics.mean(v, weights=mask)
                    for k, v in kws.items()}
@@ -235,6 +266,13 @@ def build_model_fn(model, num_classes, num_train_examples):
             weights=mask)
         metrics['contrastive_top_5_accuracy'] = tf.metrics.recall_at_k(
             tf.argmax(labels_con, 1), logits_con, k=5, weights=mask)
+        #//@audit save the predicted (label, logit) to logfile
+        #import sys
+        #tf.logging.info(labels_sup)
+        #tf.print(labels_sup,output_stream=sys.stdout)
+        metrics['boostx_recall'] = tf.metrics.recall(
+            tf.argmax(labels_sup, 1), tf.argmax(logits_sup, axis=1), weights=mask)
+
         return metrics
 
       metrics = {
@@ -251,7 +289,7 @@ def build_model_fn(model, num_classes, num_train_examples):
       return tf.estimator.tpu.TPUEstimatorSpec(
           mode=mode,
           loss=loss,
-          eval_metrics=(metric_fn, metrics),
+          eval_metrics=(metric_fn, metrics), #//@follow-up metric_fn (-1)
           scaffold_fn=None)
 
   return model_fn

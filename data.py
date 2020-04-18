@@ -99,7 +99,7 @@ def pad_to_batch(dataset, batch_size):
 
   return dataset.map(_pad_to_batch)
 
-
+#//@follow-up Estmator Evaluation (12)
 def build_input_fn(builder, is_training):
   """Build input function.
 
@@ -111,7 +111,7 @@ def build_input_fn(builder, is_training):
     A function that accepts a dict of params and returns a tuple of images and
     features, to be used as the input_fn in TPUEstimator.
   """
-  def _input_fn(params):
+  def _input_fn(params):  #//@follow-up Estmator Evaluation (14)
     """Inner input function."""
     preprocess_fn_pretrain = get_preprocess_fn(is_training, is_pretrain=True)
     preprocess_fn_finetune = get_preprocess_fn(is_training, is_pretrain=False)
@@ -125,7 +125,7 @@ def build_input_fn(builder, is_training):
           xs.append(preprocess_fn_pretrain(image))
         image = tf.concat(xs, -1)
         label = tf.zeros([num_classes])
-      else:
+      else: #//@follow-up Estmator Evaluation (15)
         image = preprocess_fn_finetune(image)
         label = tf.one_hot(label, num_classes)
       return image, label, 1.0
@@ -145,8 +145,8 @@ def build_input_fn(builder, is_training):
     dataset = pad_to_batch(dataset, params['batch_size'])
     images, labels, mask = tf.data.make_one_shot_iterator(dataset).get_next()
 
-    return images, {'labels': labels, 'mask': mask}
-  return _input_fn
+    return images, {'labels': labels, 'mask': mask} #//@follow-up Estmator Evaluation (16)
+  return _input_fn #//@follow-up Estmator Evaluation (13)
 
 
 def get_preprocess_fn(is_training, is_pretrain):
